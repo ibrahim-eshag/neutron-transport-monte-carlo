@@ -13,6 +13,7 @@ pub struct AggregateRunResult {
 
     combined_bins: Vec<BinData>,
     combined_fission_vector: Vec<Vec3D>,
+    combined_neutron_distance_travelled: Vec<f64>,
 
     total_neutrons_tracked: i64,
 

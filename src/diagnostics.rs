@@ -27,6 +27,7 @@ pub struct NeutronDiagnostics {
     pub neutron_generation_counts: Vec<i64>,
     pub neutron_position_bins: Vec<BinData>,
     pub neutron_position_bins_previous: Vec<BinData>,
+    pub neutron_travel_distance: Vec<f64>,
 
     pub convergence_tracking: Vec<(i64, f64)>,
 
@@ -38,6 +39,7 @@ pub struct NeutronDiagnostics {
 
     pub estimate_k: bool,
     pub track_bins: bool,
+    pub track_mean_free_path: bool,
     pub track_fission_positions: bool,
 
     pub track_from_generation: i64,

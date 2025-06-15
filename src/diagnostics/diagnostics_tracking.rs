@@ -1,6 +1,7 @@
 use crate::diagnostics::geometry_diagnostics::GeometryDiagnostics;
 use crate::diagnostics::halt_causes::SimulationHaltCauses;
 use crate::utils::vectors::Vec3D;
+use log::info;
 
 use crate::diagnostics::{BinData, NeutronDiagnostics};
 
@@ -16,6 +17,7 @@ impl NeutronDiagnostics {
     pub fn new(
         estimate_k: bool,
         track_bins: bool,
+        track_mean_free_path: bool,
         track_fission_positions: bool,
         track_from_generation: i64,
         bin_parameters: GeometryDiagnostics,
@@ -32,6 +34,7 @@ impl NeutronDiagnostics {
         let neutron_position_bins_previous = neutron_position_bins.clone();
 
         let convergence_tracking = Vec::<(i64, f64)>::new();
+        let neutron_travel_distance = Vec::<f64>::new();
 
         let previous_bin_generation = 0;
 
@@ -45,10 +48,12 @@ impl NeutronDiagnostics {
 
         NeutronDiagnostics {
             neutron_generation_counts: Vec::<i64>::new(),
+            neutron_travel_distance,
             bin_parameters,
             neutron_position_bins,
             estimate_k,
             track_bins,
+            track_mean_free_path,
             max_generation_value,
             averaged_k,
             halt_cause,
@@ -100,9 +105,37 @@ impl NeutronDiagnostics {
         }
     }
 
-    pub fn update_convergence(&mut self, current_generation: i64) {
-        // let bin_count = self.neutron_position_bins.len() as f64;
+    pub fn track_neutron_travel_distance(
+        &mut self,
+        generation_number: i64,
+        neutron_creation_position: Vec3D,
+        neutron_position: Vec3D,
+    ) {
+        if self.track_mean_free_path && generation_number >= self.track_from_generation {
+            self.neutron_travel_distance.push(
+                neutron_creation_position
+                    .euclidean_distance_squared(&neutron_position)
+                    .sqrt(),
+            )
+        }
 
+        // if neutron_creation_position
+        //     .dot(neutron_position)
+        //     .abs()
+        //     .sqrt()
+        //     .is_nan()
+        // {
+        //     println!(
+        //         "First position: {}. Second position: {}. Distance squared: {}. Distance: {}",
+        //         neutron_creation_position,
+        //         neutron_position,
+        //         neutron_creation_position.dot(neutron_position),
+        //         neutron_creation_position.dot(neutron_position).sqrt(),
+        //     );
+        // }
+    }
+
+    pub fn update_convergence(&mut self, current_generation: i64) {
         let current_neutron_count = self
             .neutron_position_bins
             .iter()
@@ -117,6 +150,15 @@ impl NeutronDiagnostics {
             .sum::<i64>()
             .max(1) as f64;
 
+        /* The idea is that the convergence has to be:
+        1. Interpretable: the values have to be meaningful (unlike KL-divergence).
+        2. Initially close to 1.0 then tending to 0.0.
+        3. Independent of the grid or the number of neutrons.
+
+        I think this current version does that okay-ish. The number of neutrons is independent of the number of bins, so we don't actually need to normalize by that.
+        We don't sample more or less with more or fewer bins; we simply place all the neutrons within a certain volume in a bin. Therefore, normalizing over just the
+        total number of neutrons in each step is already enough.
+         */
         let convergence: f64 = self
             .neutron_position_bins
             .iter()
@@ -130,11 +172,6 @@ impl NeutronDiagnostics {
 
         self.convergence_tracking
             .push((current_generation, convergence));
-
-        println!(
-            "Generation: {}. Previous count: {}. Current count: {}, Convergence: {}",
-            current_generation, previous_neutron_count, current_neutron_count, convergence
-        );
 
         // Update the old ones with the new set
         self.neutron_position_bins_previous = self.neutron_position_bins.clone();
@@ -150,5 +187,7 @@ impl NeutronDiagnostics {
         self.total_neutrons_tracked = self.neutron_generation_counts.iter().sum();
         self.halt_cause = halt_cause;
         self.max_generation_value = neutron_generation;
+
+        info!("Simulation halted: {}", self.halt_cause);
     }
 }

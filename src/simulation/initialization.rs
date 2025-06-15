@@ -47,9 +47,11 @@ impl Simulation {
         let mut parent_neutron = Neutron::default();
         parent_neutron.position = self.simulation_parameters.neutron_initial_position;
         parent_neutron.energy = 1e6;
+        parent_neutron.distance_step = self.simulation_parameters.neutron_step;
 
         self.components
-            .update_cache_properties(parent_neutron.energy);
+            .update_material_properties_cache(parent_neutron.energy);
+        self.components.update_parts_cache(&parent_neutron.position);
         self.components.get_maximum_radius_squared();
 
         self.populate_initial_neutrons(&parent_neutron);

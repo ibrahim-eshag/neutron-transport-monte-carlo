@@ -8,20 +8,79 @@ use crate::materials::material_properties::{
 };
 use crate::utils::vectors::Vec3D;
 
-use log::debug;
+/// Part composition for mixed materials.
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+pub struct PartComposition {
+    pub material_name: MaterialNames,
+    pub material_fraction: f64,
+}
 
-/// Basic bounding-box for faster rejection: if the neutron is outside the bounding box, the more complex check is skipped.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BoundingBox {
     pub min: Vec3D,
     pub max: Vec3D,
 }
 
-/// Part composition for mixed materials.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct PartComposition {
-    pub material_name: MaterialNames,
-    pub material_fraction: f64,
+impl BoundingBox {
+    pub fn is_inside(&self, neutron_position: &Vec3D) -> bool {
+        if neutron_position.x < self.min.x || neutron_position.x > self.max.x {
+            return false;
+        }
+        if neutron_position.y < self.min.y || neutron_position.y > self.max.y {
+            return false;
+        }
+        if neutron_position.z < self.min.z || neutron_position.z > self.max.z {
+            return false;
+        }
+        true
+    }
+
+    /// Should only be used if we already ran the 'is_inside' already!
+    #[inline(always)]
+    pub fn distance(&self, p: &Vec3D) -> f64 {
+        // For each axis: positive delta if we're outside, 0.0 if we're between the two faces
+        let dx = if p.x < self.min.x {
+            self.min.x - p.x
+        } else {
+            (p.x - self.max.x).max(0.0) // only positive when p.x > max.x
+        };
+
+        let dy = if p.y < self.min.y {
+            self.min.y - p.y
+        } else {
+            (p.y - self.max.y).max(0.0)
+        };
+
+        let dz = if p.z < self.min.z {
+            self.min.z - p.z
+        } else {
+            (p.z - self.max.z).max(0.0)
+        };
+
+        (dx * dx + dy * dy + dz * dz).sqrt()
+    }
+
+    /// Squared distance variant – avoids the costly sqrt().
+    /// Should only be used if we already ran the 'is_inside' already!
+    #[inline(always)]
+    pub fn distance_squared(&self, p: &Vec3D) -> f64 {
+        let dx = if p.x < self.min.x {
+            self.min.x - p.x
+        } else {
+            (p.x - self.max.x).max(0.0)
+        };
+        let dy = if p.y < self.min.y {
+            self.min.y - p.y
+        } else {
+            (p.y - self.max.y).max(0.0)
+        };
+        let dz = if p.z < self.min.z {
+            self.min.z - p.z
+        } else {
+            (p.z - self.max.z).max(0.0)
+        };
+        dx * dx + dy * dy + dz * dz
+    }
 }
 
 /// Struct that contains the material data, cached properties and parts - essentially all the geometry.
@@ -30,14 +89,21 @@ pub struct Components {
     pub material_data_vector: Vec<MaterialData>,
     pub cached_material_properties: Vec<MaterialProperties>,
     pub parts_vector: Vec<PartTypes>,
-    pub cache_initialized: bool,
+    pub material_properties_cache_initialized: bool,
     pub simulation_range_squared: f64,
+    pub neutron_position_at_update: Vec3D,
+    pub relevant_parts_index_cache: Vec<usize>,
+    pub part_cache_maximum_distance_squared: f64,
+    pub parts_cache_initialized: bool,
 }
 
 impl Components {
-    pub fn new(material_data_vector: Vec<MaterialData>, parts_vector: Vec<PartTypes>) -> Self {
-        // Has to be updated after creation of the Components-code.
-        let simulation_range_squared = -1.0;
+    pub fn new(
+        material_data_vector: Vec<MaterialData>,
+        parts_vector: Vec<PartTypes>,
+        parts_cache_distance: f64,
+    ) -> Self {
+        let simulation_range_squared = f64::INFINITY;
 
         let material_property = MaterialProperties::default();
         let mut cached_material_properties: Vec<MaterialProperties> = Vec::new();
@@ -46,14 +112,68 @@ impl Components {
             cached_material_properties.push(material_property.clone());
         }
 
-        let is_cache_initialized = false;
+        let material_properties_cache_initialized = false;
+        let parts_cache_initialized = false;
+
+        let relevant_parts_index_cache: Vec<usize> = Vec::default();
+        let neutron_position_at_update: Vec3D = Vec3D::default();
+        let part_cache_maximum_distance_squared = parts_cache_distance * parts_cache_distance; // squared distance
 
         Components {
             material_data_vector,
             parts_vector,
             cached_material_properties,
-            cache_initialized: is_cache_initialized,
+            material_properties_cache_initialized,
             simulation_range_squared,
+            relevant_parts_index_cache,
+            neutron_position_at_update,
+            part_cache_maximum_distance_squared,
+            parts_cache_initialized,
+        }
+    }
+
+    /// Checks the squared Euclidean distance to all the parts, and if it's within the specified range, adds the index to the cached vector.
+    pub fn check_parts_distances(&mut self, neutron_position: &Vec3D) {
+        // Clearing out
+        self.relevant_parts_index_cache.clear();
+
+        for (part_index, part) in self.parts_vector.iter().enumerate() {
+            // Checks each option in the enum and returns the matches.
+            let (is_inside, min_part_distance) = match part {
+                PartTypes::Sphere(sphere) => (
+                    sphere.is_inside(neutron_position),
+                    sphere.bounding_box.distance_squared(neutron_position),
+                ),
+                PartTypes::Cylinder(cylinder) => (
+                    cylinder.is_inside(neutron_position),
+                    cylinder.bounding_box.distance_squared(neutron_position),
+                ),
+                PartTypes::Cuboid(cuboid) => (
+                    cuboid.is_inside(neutron_position),
+                    cuboid.bounding_box.distance_squared(neutron_position),
+                ),
+            };
+
+            // If we're inside: take it either way. If we're not inside: consider the minimum distance to the bounding box.
+            if is_inside || min_part_distance <= self.part_cache_maximum_distance_squared {
+                self.relevant_parts_index_cache.push(part_index)
+            }
+        }
+    }
+
+    /// Calculates the distance travelled
+    pub fn update_parts_cache(&mut self, neutron_position: &Vec3D) {
+        let distance_travelled =
+            neutron_position.euclidean_distance_squared(&self.neutron_position_at_update);
+
+        // info!("Part cache length: {}", self.parts_cache)
+
+        if distance_travelled >= self.part_cache_maximum_distance_squared
+            || !self.parts_cache_initialized
+        {
+            self.neutron_position_at_update = *neutron_position;
+            self.check_parts_distances(neutron_position);
+            self.parts_cache_initialized = true;
         }
     }
 
@@ -65,12 +185,10 @@ impl Components {
         let mut maximum_radius = 0.0;
 
         for part in &self.parts_vector {
-            let (bounding_box, center, order) = match part {
-                PartTypes::Sphere(sphere) => (&sphere.bounding_box, &sphere.center, &sphere.order),
-                PartTypes::Cylinder(cylinder) => {
-                    (&cylinder.bounding_box, &cylinder.center, &cylinder.order)
-                }
-                PartTypes::Cuboid(cuboid) => (&cuboid.bounding_box, &cuboid.center, &cuboid.order),
+            let (bounding_box, order) = match part {
+                PartTypes::Sphere(sphere) => (&sphere.bounding_box, &sphere.order),
+                PartTypes::Cylinder(cylinder) => (&cylinder.bounding_box, &cylinder.order),
+                PartTypes::Cuboid(cuboid) => (&cuboid.bounding_box, &cuboid.order),
             };
 
             // To allow a large background using for example a cube (computationally efficient because no squaring for the radius), without having it included in the simulation range, if the order is specified as -1 or less, it will be skipped.
@@ -78,8 +196,8 @@ impl Components {
                 continue;
             }
 
-            let coordinate_min_radius = center.add(bounding_box.min).norm_squared();
-            let coordinate_max_radius = center.add(bounding_box.max).norm_squared();
+            let coordinate_min_radius = bounding_box.min.norm_squared();
+            let coordinate_max_radius = bounding_box.max.norm_squared();
 
             if coordinate_max_radius > maximum_radius {
                 maximum_radius = coordinate_max_radius
@@ -89,18 +207,16 @@ impl Components {
             }
         }
 
-        debug!("Maximum part radius: {:.3} m.", maximum_radius.sqrt());
-
         self.simulation_range_squared = maximum_radius;
     }
 
     /// Updating the cache of material properties for the given neutron's energy.
     /// This should be done any time the neutron's energy changes significantly, or whenever the simulation starts.
-    pub fn update_cache_properties(&mut self, neutron_energy: f64) {
+    pub fn update_material_properties_cache(&mut self, neutron_energy: f64) {
         for (index, material_data) in self.material_data_vector.iter().enumerate() {
             self.cached_material_properties[index].get_properties(material_data, neutron_energy);
         }
-        self.cache_initialized = true;
+        self.material_properties_cache_initialized = true;
     }
 
     /// Calculates the composition's total cross-section for a given neutron's energy from the cached properties.
@@ -112,7 +228,10 @@ impl Components {
     ) -> f64 {
         let mut overall_total_cross_section: f64 = 0.0;
 
-        debug_assert!(self.cache_initialized, "Cache was not initialized!");
+        debug_assert!(
+            self.material_properties_cache_initialized,
+            "Cache was not initialized!"
+        );
 
         for part_composition in part_composition_vector {
             let material_name = part_composition.material_name;
@@ -177,7 +296,10 @@ impl Components {
         let material_selection_criterion = rng.gen::<f64>();
         let mut cumulative_probability = 0.0;
 
-        debug_assert!(self.cache_initialized, "Cache was not initialized!");
+        debug_assert!(
+            self.material_properties_cache_initialized,
+            "Cache was not initialized!"
+        );
 
         // debug!("Criterion: {}", material_selection_criterion);
 
@@ -217,6 +339,12 @@ impl Components {
             }
 
             cumulative_probability += normalized_cross_section;
+
+            assert!(
+                cumulative_probability < 1.0,
+                "Cumulative probability is {}",
+                cumulative_probability
+            );
         }
 
         // debug!("Total cross sections: {}", composition_total_cross_section);
@@ -240,7 +368,10 @@ impl Components {
         let mut max_part_composition_vector: &Vec<PartComposition> = &empty_reference_vector;
 
         // Iterating over all the different parts.
-        for part in &self.parts_vector {
+        for part_index in &self.relevant_parts_index_cache {
+            let part = &self.parts_vector[*part_index];
+
+            // for part in &self.parts_vector {
             // Checks each option in the enum and returns the matches.
             let (is_inside, order, material_composition_vector) = match part {
                 PartTypes::Sphere(sphere) => (
@@ -295,10 +426,17 @@ impl Components {
         neutron_position: &Vec3D,
     ) -> (&MaterialProperties, f64) {
         // Ensuring everything is correctly initialized.
-        debug_assert!(self.cache_initialized, "Cache was not initialized!");
+        debug_assert!(
+            self.material_properties_cache_initialized,
+            "Cache was not initialized!"
+        );
         debug_assert!(
             self.simulation_range_squared > 0.0,
             "Simulation range is not set correctly."
+        );
+        debug_assert!(
+            self.parts_cache_initialized,
+            "Parts cache was not initialized!"
         );
 
         let (material_index, composition_total_cross_section) =

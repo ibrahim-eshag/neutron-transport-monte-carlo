@@ -28,7 +28,11 @@ pub fn create_simulation() -> Simulation {
     // Required structs.
     let material_data_vector = get_material_data_vector();
     let parts_vector = load_geometries(Path::new(&simulation_parameters.geometries_path));
-    let components: Components = Components::new(material_data_vector, parts_vector);
+    let components: Components = Components::new(
+        material_data_vector,
+        parts_vector,
+        simulation_parameters.parts_cache_distance,
+    );
     components.check_material_fractions_sum();
     let neutron_scheduler: NeutronScheduler = NeutronScheduler::default();
 
@@ -37,6 +41,7 @@ pub fn create_simulation() -> Simulation {
     let neutron_diagnostics: NeutronDiagnostics = NeutronDiagnostics::new(
         simulation_parameters.estimate_k,
         simulation_parameters.track_bins,
+        simulation_parameters.track_mean_free_path,
         simulation_parameters.track_fission_positions,
         simulation_parameters.track_from_generation,
         bin_parameters,
@@ -58,7 +63,7 @@ pub fn create_simulation() -> Simulation {
 pub fn standard_simulation(simulation_index: i64, maximum_simulation_index: i64) -> Simulation {
     let mut simulation = create_simulation();
 
-    // Running the simulation.
+    // // Running the simulation.
     simulation.run_simulation();
 
     info!(

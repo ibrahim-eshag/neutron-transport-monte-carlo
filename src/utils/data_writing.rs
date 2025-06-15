@@ -114,3 +114,24 @@ pub fn write_convergence_vector(convergence_per_generation: &Vec<(i64, f64)>, fi
 
     wtr.flush().expect("Flushing CSV writer");
 }
+
+/// Write the convergence results to a file
+pub fn write_neutron_distance_travelled_vector(distance_travelled: &Vec<f64>, file_path: &Path) {
+    let mut mean_free_path_file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open(file_path)
+        .expect("Opening convergence file.");
+
+    mean_free_path_file
+        .write("mean_free_path\n".as_bytes())
+        .expect("Failed to write mean free path header.");
+
+    for distance in distance_travelled {
+        let write_string = format!("{}\n", distance);
+        mean_free_path_file
+            .write(write_string.as_bytes())
+            .expect("Failed to write mean free path data.");
+    }
+}

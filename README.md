@@ -158,6 +158,14 @@ Additional energy-dependent material data can be loaded in from ENDFs. Details o
 
 ## Updates 
 
+### 15-06-2025 - General improvements 
+
+It's been a while - but I got around to updating my private repo quite extensively - improvements to the neutron generation, transport, and diagnostics, as well as to the geometry handling. Previously, the code looped through all geometric parts in the constructive solid geometry code, which scaled _badly_ for >100 parts. I added a local queue for each neutron for neighboring parts, which is updated whenever the neutron travels beyond a certain radius from the previous queue refresh point. With that, we can comfortably run up to the current 1862 components of the new cruciform reactor model. 
+
+<img src="figures/08062025 - Neutron Monte Carlo - critical cruciform reactor - side.png" width="400" alt="Cruciform control rods.">
+
+<img src="figures/10062025 - Neutron Monte Carlo - plate temperatures at around 100 kW.png" width="400" alt="Fuel plate temperature for a central fuel plate.">
+
 ### 28-07-2024 - Major changes in heat diffusion code 
 
 The heat diffusion code was completely reworked, resulting in massive speed-ups, and overall far more usable code. The new system works by creating an aggregated CSV file with fission locations, which is then loaded in by the heat diffusion code, distributed over bins, and used as source terms. This is far more flexible and modular than the previous approach where the fission bins were used directly, and boundary conditions determined using those. 

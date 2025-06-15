@@ -9,7 +9,7 @@ import pandas as pd
 # print(df["fission_count"].describe())
 
 df = pd.read_csv(
-    r"D:\Desktop\nuclear-rust\results\diagnostics\runs\Convergence analysis - 2024-11-03_19-08-16.164089200\convergence.csv"
+    r"D:\Desktop\nuclear-rust\results\diagnostics\runs\Convergence analysis - 2024-11-06_08-15-39.558465400\convergence.csv"
 )
 
 # We only track starting from generation 5 by default

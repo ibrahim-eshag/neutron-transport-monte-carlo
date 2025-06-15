@@ -39,12 +39,13 @@ impl Neutron {
         rng: &mut rand::rngs::SmallRng,
     ) -> () {
         let neutron_mass = 1.67492749804e-27;
-        self.distance_step = 0.001;
+        self.distance_step = parent_neutron.distance_step;
         let q = 1.60218e-19;
 
         self.energy = self.get_energy(watt_a, watt_b, rng);
 
         self.creation_time = parent_neutron.current_time;
+        self.creation_position = parent_neutron.position;
         self.current_time = parent_neutron.current_time;
         self.position = parent_neutron.position;
         self.generation_number = parent_neutron.generation_number + 1;
@@ -74,7 +75,7 @@ impl Neutron {
         maximum_neutron_energy_difference: f64,
     ) -> () {
         let new_direction: Vec3D = Vec3D::random_unit_vector(rng);
-        let cos_theta = self.direction.dot(new_direction);
+        let cos_theta = self.direction.dot(&new_direction);
 
         // let angle = cos_theta.acos() / (2. * 3.1415) * 360.;
         // debug!(

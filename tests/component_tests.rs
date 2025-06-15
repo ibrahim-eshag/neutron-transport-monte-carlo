@@ -150,9 +150,12 @@ fn check_bounding_boxes() {
 
 #[test]
 fn check_material_indices() {
-    let mut components: Components =
-        Components::new(get_material_data_vector(), create_reference_sphere());
-    components.update_cache_properties(1e6);
+    let mut components: Components = Components::new(
+        get_material_data_vector(),
+        create_reference_sphere(),
+        0.10 * 0.10,
+    );
+    components.update_material_properties_cache(1e6);
 
     for (vector_index, material_data) in components.material_data_vector.iter().enumerate() {
         let material_name_in_vector = material_data.name;

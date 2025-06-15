@@ -27,6 +27,7 @@ pub struct ParallelizationParametersTOML {
 pub struct SimulationParametersTOML {
     pub run_name: String,
     pub neutron_initial_position: Vec3D,
+    pub neutron_step: f64,
     pub neutron_generation_cap: i64,
     pub neutron_count_cap: i64,
     pub initial_neutron_count: i64,
@@ -36,6 +37,7 @@ pub struct SimulationParametersTOML {
     pub estimate_k: bool,
     pub track_fission_positions: bool,
     pub track_bins: bool,
+    pub track_mean_free_path: bool,
     pub track_from_generation: i64,
     pub plot_geometry: bool,
     pub halt_time: Option<f64>,
@@ -45,6 +47,7 @@ pub struct SimulationParametersTOML {
     pub calculate_convergence: bool,
     pub convergence_analysis_period: i64,
     pub minimum_convergence_level: f64,
+    pub parts_cache_distance: f64,
 }
 
 /// Parameters for heat diffusion modelling.

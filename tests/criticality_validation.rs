@@ -23,8 +23,11 @@ fn godiva_test() {
     let neutron_bin_parameters = config.neutron_bins;
 
     // Required structs.
-    let components: Components =
-        Components::new(get_material_data_vector(), create_reference_sphere());
+    let components: Components = Components::new(
+        get_material_data_vector(),
+        create_reference_sphere(),
+        simulation_parameters.parts_cache_distance,
+    );
     components.check_material_fractions_sum();
 
     let neutron_scheduler: NeutronScheduler = NeutronScheduler::default();
@@ -33,6 +36,7 @@ fn godiva_test() {
     let neutron_diagnostics: NeutronDiagnostics = NeutronDiagnostics::new(
         simulation_parameters.estimate_k,
         simulation_parameters.track_bins,
+        simulation_parameters.track_mean_free_path,
         simulation_parameters.track_fission_positions,
         simulation_parameters.track_from_generation,
         bin_parameters,
@@ -78,8 +82,11 @@ fn infinite_medium_test() {
     let neutron_bin_parameters = config.neutron_bins;
 
     // Required structs.
-    let components: Components =
-        Components::new(get_material_data_vector(), create_default_sphere(1000.));
+    let components: Components = Components::new(
+        get_material_data_vector(),
+        create_default_sphere(1000.),
+        simulation_parameters.parts_cache_distance,
+    );
     components.check_material_fractions_sum();
 
     let neutron_scheduler: NeutronScheduler = NeutronScheduler::default();
@@ -88,6 +95,7 @@ fn infinite_medium_test() {
     let neutron_diagnostics: NeutronDiagnostics = NeutronDiagnostics::new(
         simulation_parameters.estimate_k,
         simulation_parameters.track_bins,
+        simulation_parameters.track_mean_free_path,
         simulation_parameters.track_fission_positions,
         simulation_parameters.track_from_generation,
         bin_parameters,

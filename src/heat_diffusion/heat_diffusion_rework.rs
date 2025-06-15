@@ -18,7 +18,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::io::BufWriter;
 use std::path::Path;
-use std::process::Command;
+// use std::process::Command;
 use std::thread;
 
 use crate::heat_diffusion::HeatDiffusion;
@@ -322,7 +322,12 @@ impl HeatDiffusion {
             _ => (),
         };
 
-        self.simulation.components.update_cache_properties(1e6);
+        self.simulation
+            .components
+            .update_material_properties_cache(1e6);
+        self.simulation
+            .components
+            .update_parts_cache(&Vec3D::default());
 
         self.material_index_array = self.create_grid_array();
         self.create_property_array();
@@ -405,6 +410,13 @@ impl HeatDiffusion {
                     );
                 }
 
+                if mean_temperature.is_nan() {
+                    panic!(
+                        "Encountered NaN in temperature_center at t={} ({}/{}), halting simulation.",
+                        time, time_index, self.time_steps
+                    );
+                }
+
                 let center_heat_flux: f64 = self
                     .simulation_directions
                     .iter()
@@ -473,13 +485,13 @@ impl HeatDiffusion {
             handle.join().expect("Thread panicked");
         }
 
-        info!("Converting CSVs to VTKs.");
+        // info!("Converting CSVs to VTKs.");
 
-        let python_csv_vtk_mode = "heat_diffusion";
-        Command::new("python3")
-            .arg("scripts/post_processing/csv_to_vtk.py")
-            .arg(python_csv_vtk_mode)
-            .output()
-            .expect("Failed to execute script");
+        // let python_csv_vtk_mode = "heat_diffusion";
+        // Command::new("python3")
+        //     .arg("scripts/post_processing/csv_to_vtk.py")
+        //     .arg(python_csv_vtk_mode)
+        //     .output()
+        //     .expect("Failed to execute script");
     }
 }

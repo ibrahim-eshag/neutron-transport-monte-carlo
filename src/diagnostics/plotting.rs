@@ -12,7 +12,10 @@ use std::process::Command;
 pub fn plot_geometry(simulation: &mut Simulation, plot_parameters: GeometryDiagnostics) {
     debug!("Starting geometry plotting.");
 
-    simulation.components.update_cache_properties(1e6);
+    simulation.components.part_cache_maximum_distance_squared = 1e9;
+    simulation.components.update_material_properties_cache(1e6);
+    simulation.components.update_parts_cache(&Vec3D::default());
+
     simulation.components.get_maximum_radius_squared();
 
     let x_step =
@@ -36,9 +39,9 @@ pub fn plot_geometry(simulation: &mut Simulation, plot_parameters: GeometryDiagn
         .write("x,y,z,index\n".as_bytes())
         .expect("Writing geometry material data headers.");
 
-    for x_bin in 0..plot_parameters.length_count {
+    for z_bin in 0..plot_parameters.height_count {
         for y_bin in 0..plot_parameters.depth_count {
-            for z_bin in 0..plot_parameters.height_count {
+            for x_bin in 0..plot_parameters.length_count {
                 let x = plot_parameters.x_min + x_step * x_bin as f64;
                 let y = plot_parameters.y_min + y_step * y_bin as f64;
                 let z = plot_parameters.z_min + z_step * z_bin as f64;
@@ -69,7 +72,7 @@ pub fn plot_geometry(simulation: &mut Simulation, plot_parameters: GeometryDiagn
 
 /// Largely superseded by ```plot_geometry``` but in case ParaView is not available, this still provides an alternative to plot slices natively, which can subsequently be plotted by Matplotlib.
 pub fn plot_geometry_slice(simulation: &mut Simulation) {
-    simulation.components.update_cache_properties(1e6);
+    simulation.components.update_material_properties_cache(1e6);
     simulation.components.get_maximum_radius_squared();
 
     let center = Vec3D::default();
@@ -85,7 +88,7 @@ pub fn plot_geometry_slice(simulation: &mut Simulation) {
         z: 0.0,
     };
 
-    let span_dot_product = span_1.dot(span_2);
+    let span_dot_product = span_1.dot(&span_2);
     assert_eq!(span_dot_product, 0.0);
 
     let min_parameter = -1.0;
@@ -115,10 +118,10 @@ pub fn plot_geometry_slice(simulation: &mut Simulation) {
             let scalar_1 = min_parameter + i as f64 * step_size;
             let scalar_2 = min_parameter + j as f64 * step_size;
 
-            let span_1_position: Vec3D = span_1.scalar_dot(scalar_1);
-            let span_2_position: Vec3D = span_2.scalar_dot(scalar_2);
+            let span_1_position: Vec3D = span_1.scalar_product(scalar_1);
+            let span_2_position: Vec3D = span_2.scalar_product(scalar_2);
 
-            let combined_position: Vec3D = center.add(span_1_position.add(span_2_position));
+            let combined_position: Vec3D = center.add(&span_1_position.add(&span_2_position));
 
             let (material_index, _) = simulation
                 .components

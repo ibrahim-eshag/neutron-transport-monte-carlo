@@ -27,7 +27,7 @@ impl MaterialData {
         let name: MaterialNames = MaterialNames::U238;
         let atomic_mass = 238.;
 
-        let thermal_conductivity = 27.;
+        let thermal_conductivity = 40.;
         let density = 19050.;
         let specific_heat = 116.;
 

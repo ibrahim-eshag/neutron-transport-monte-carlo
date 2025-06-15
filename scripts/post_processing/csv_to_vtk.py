@@ -4,16 +4,19 @@ from pathlib import Path
 
 import pandas as pd
 from pyvtk import PointData, Scalars, StructuredGrid, VtkData
+from tqdm import tqdm
 
 
 def csv_to_vtk(csv_file_path, vtk_folder, scalar_column, keep_existing=False):
     df = pd.read_csv(csv_file_path, low_memory=False)
     df = df.sort_values(by=["z", "y", "x"])  # Ensure correct data order
 
+    print(df)
+
     nx, ny, nz = len(df["x"].unique()), len(df["y"].unique()), len(df["z"].unique())
-    
+
     print(f"nx, ny, nz: {nx}, {ny}, {nz}")
-    
+
     if len(df) != nx * ny * nz:
         print(f"Data in {csv_file_path} does not fit perfectly into a structured grid.")
         return -1
@@ -28,10 +31,13 @@ def csv_to_vtk(csv_file_path, vtk_folder, scalar_column, keep_existing=False):
         print(f"Reshaping failed for {csv_file_path}: {e}")
         return -1
 
-    if "geometry" in Path(csv_file_path).stem: 
+    if "geometry" in Path(csv_file_path).stem:
         vtk_file_path = Path("results/geometry/geometry.vtk")
-    else: 
-        vtk_file_path = Path(vtk_folder) / f"heat_diffusion_{int(float(Path(csv_file_path).stem) * 1000):05d}.vtk"
+    else:
+        vtk_file_path = (
+            Path(vtk_folder)
+            / f"heat_diffusion_{int(float(Path(csv_file_path).stem) * 1000):05d}.vtk"
+        )
 
     if vtk_file_path.exists() and keep_existing:
         return 0
@@ -65,7 +71,7 @@ def process_csv(csv_file_path):
             return
 
         print(f"Converting to vtk - {csv_file_path}")
-        
+
         vtk_path.mkdir(exist_ok=True, parents=True)
         csv_to_vtk(csv_file_path, vtk_path, scalar_column, keep_existing=False)
     except Exception as e:
@@ -76,14 +82,18 @@ def process_csv(csv_file_path):
 def process_geometry():
     process_csv(Path(r"D:\Desktop\nuclear-rust\results\geometry\geometry.csv"))
 
+
 def process_heat_diffusion():
     csv_files = list(Path("results/heat_diffusion").glob("**/*.csv"))
     with concurrent.futures.ProcessPoolExecutor(max_workers=20) as executor:
-        list(executor.map(process_csv, csv_files), total=len(csv_files))
+        list(tqdm(executor.map(process_csv, csv_files), total=len(csv_files)))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process CSV files")
-    parser.add_argument("mode", choices=["geometry", "heat_diffusion"], help="Mode to run the script in")
+    parser.add_argument(
+        "mode", choices=["geometry", "heat_diffusion"], help="Mode to run the script in"
+    )
     args = parser.parse_args()
 
     if args.mode == "geometry":

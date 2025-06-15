@@ -18,7 +18,7 @@ toml = "0.8.10"
 
 [profile.release] 
 opt-level=3
-# debug = true
+# debug = 2
 
 [profile.test] 
 opt-level=3

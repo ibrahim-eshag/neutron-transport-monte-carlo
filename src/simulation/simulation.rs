@@ -12,7 +12,7 @@ impl Simulation {
 
         // Outer loop over the neutron vector until we either hit a specific limit or we run out of neutrons.
         loop {
-            let mut iteration = 0;
+            let mut _iteration = 0;
 
             if self.neutron_scheduler.is_empty() {
                 // debug!("No more neutrons.");
@@ -41,12 +41,18 @@ impl Simulation {
             tracked_neutron_generation = neutron.generation_number;
 
             // Updating the material properties cache for the current neutron's energy.
-            self.components.update_cache_properties(neutron.energy);
+            self.components
+                .update_material_properties_cache(neutron.energy);
+
+            // Updating the neutron's parts cache for the current neutron's position.
+            self.components.update_parts_cache(&neutron.position);
+
+            neutron.current_time = neutron.creation_time;
 
             // Inner loop over the current neutron.
             loop {
-                iteration += 1;
-                neutron.current_time = neutron.creation_time + iteration as f64 * neutron.time_step;
+                _iteration += 1;
+                neutron.current_time += neutron.time_step;
 
                 neutron.translate();
 
@@ -56,9 +62,12 @@ impl Simulation {
 
                 // Updating the caches in case the neutron has encountered elastic scattering, changing its energy.
                 if neutron.has_scattered {
-                    self.components.update_cache_properties(neutron.energy);
+                    self.components
+                        .update_material_properties_cache(neutron.energy);
                     neutron.has_scattered = false;
                 }
+
+                self.components.update_parts_cache(&neutron.position);
 
                 // Getting material properties.
                 // This gives the total cross-section and the selected material, for if the material actually interacts.
@@ -80,6 +89,11 @@ impl Simulation {
                 }
 
                 if interaction_type == InteractionTypes::Escaped {
+                    self.neutron_diagnostics.track_neutron_travel_distance(
+                        neutron.generation_number,
+                        neutron.creation_position,
+                        neutron.position,
+                    );
                     self.neutron_scheduler.remove_neutron(0);
                     // debug!("Escaped");
                     break;
@@ -95,6 +109,11 @@ impl Simulation {
                 }
 
                 if interaction_type == InteractionTypes::Absorption {
+                    self.neutron_diagnostics.track_neutron_travel_distance(
+                        neutron.generation_number,
+                        neutron.creation_position,
+                        neutron.position,
+                    );
                     self.neutron_scheduler.remove_neutron(0);
                     // debug!("Absorbed!");
                     break;
@@ -108,23 +127,32 @@ impl Simulation {
                         neutron.generation_number,
                         neutron.position,
                     );
+                    self.neutron_diagnostics.track_neutron_travel_distance(
+                        neutron.generation_number,
+                        neutron.creation_position,
+                        neutron.position,
+                    );
 
                     let fission_count: i32 = neutron
                         .get_neutron_fission_count(material_properties.nu_bar, &mut self.rng);
 
-                    let mut new_neutron: Neutron = Neutron::default();
-                    new_neutron.initialize(
-                        &neutron,
-                        material_properties.watt_a,
-                        material_properties.watt_b,
-                        &mut self.rng,
-                    );
-
-                    self.neutron_scheduler.remove_neutron(0);
+                    let mut new_neutrons = Vec::with_capacity(fission_count as usize);
 
                     for _ in 0..fission_count {
-                        self.neutron_scheduler.add_neutron(new_neutron.clone());
+                        let mut new_neutron: Neutron = Neutron::default();
+                        new_neutron.initialize(
+                            &neutron,
+                            material_properties.watt_a,
+                            material_properties.watt_b,
+                            &mut self.rng,
+                        );
+
+                        new_neutrons.push(new_neutron);
                     }
+
+                    self.neutron_scheduler.add_neutron_vec(&mut new_neutrons);
+
+                    self.neutron_scheduler.remove_neutron(0);
                     break;
                 }
 

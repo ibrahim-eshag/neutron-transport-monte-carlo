@@ -5,49 +5,52 @@ number_threads = 10
 simulations_per_thread = 1
 
 [simulation_parameters]
-run_name = 'Convergence analysis'
+run_name = 'Cruciform rods'
 
 # Neutron settings
-neutron_initial_position = { x = -0.05, y = 0.0, z = 0.0 }
-
-neutron_generation_cap = 1000                         # Maximum number of generations: simulation will be halted. 
-neutron_count_cap = 50000                             # Maximum number of neutrons: simulation will be halted unless enforce_maximum_neutron_count is true. 
-neutron_fission_count_cap = 100000                    # Halts the simulation when this number of fissions have been recorded. Requires track_fission_positions. 
+neutron_initial_position = { x = 0.125, y = 0.025, z = 0.0 }
+neutron_step = 0.001                                 # Distance per update step.  
+neutron_generation_cap = 100000000                         # Maximum number of generations: simulation will be halted. 
+neutron_count_cap = 1000000000000                             # Maximum number of neutrons: simulation will be halted unless variance reduction is enabled. 
+neutron_fission_count_cap = 1000000000                    # Halts the simulation when this number of fissions have been recorded. Requires track_fission_positions. 
 
 initial_neutron_count = 10000                         # Initial number of neutrons. 
 maximum_neutron_energy_difference = 0.01              # Maximum energy difference from elastic collisions before the material properties are updated. 
 
+parts_cache_distance = 0.20                         # Maximum distance to cache parts in. Once the neutron has travelled this distance, the cache is updated. 
+
 # Variance reduction 
-variance_reduction = true                             # Resets the neutron count to specified_neutron_count each generation by removing or sampling. 
+variance_reduction = false                             # Resets the neutron count to specified_neutron_count each generation by removing or sampling. 
 specified_neutron_count = 10000                       # Target neutron count. 
 
 # Geometries 
-geometries_path = 'config/geometries/reactor_vessel.toml'
+geometries_path = 'config/geometries/cruciform_rods.toml'
 
 # Diagnostics
-halt_time = 1e-1                                      # Removes any neutron after this time. Useful for power estimation. 
+halt_time = 1e-2                                     # Removes any neutron after this time. Useful for power estimation. 
 track_from_generation = 5                             # Generation from which to start tracking results. Reduces initialization bias. 
 estimate_k = true                                     # Estimates the neutron multiplication factor. 
-track_fission_positions = false                       # Tracks exact positions of fission events. Useful for heat diffusion simulations. 
+track_fission_positions = true                       # Tracks exact positions of fission events. Useful for heat diffusion simulations. 
 track_bins = true                                     # Tracks presence and fission events. 
+track_mean_free_path = true                           # Track average distance travelled by the neutrons. 
 
-calculate_convergence = true                          # Enabling convergence analysis. 
+calculate_convergence = false                          # Enabling convergence analysis. 
 convergence_analysis_period = 1                       # Check convergence per this number of generations. 
-minimum_convergence_level = 1e-5                      # Halting criterion for convergence. 
+minimum_convergence_level = 1e-4                      # Halting criterion for convergence. 
 
 # Post-processing
 plot_geometry = false                                 # Plotting the geometry in a format that ParaView can load in as a CSV. 
 model_heat_diffusion = false                          # Simulating heat diffusion using the calculated bins. 
 
 [heat_diffusion_parameters]
-source_data_file = 'D:\Desktop\nuclear-rust\results\diagnostics\aggregated_runs\Larger geometry heat diffusion - 2024-07-29_14-26-41.975221400\neutron_fission_results.csv'
+source_data_file = 'C:\Users\Niels\Desktop\nuclear-rust\results\diagnostics\runs\Cruciform rods - 2025-06-10_08-51-25.768558700\neutron_fission_results.csv'
 minimum_relevant_property_index = 6                   # Minimum property index: anything less than this is considered a boundary condition. 
-neutron_multiplier = 1e5                              # Neutron multiplier for the heat diffusion. 
-convective_heat_transfer_coefficient = 10000.0        # Based on Nusselt for a flat plate, spacing of 1.5 cm. 
-initial_internal_temperature = 600.0                  # Initial material temperature. 
-external_temperature = 293.15                         # External temperature applied to the plates. 
-t_delta = 2e-5                                        # Time step in the heat diffusion model. 
-t_end = 1                                             # Simulation time (s).
+neutron_multiplier = 10_000_000                              # Neutron multiplier for the heat diffusion. 
+convective_heat_transfer_coefficient = 10_000.0        # Based on Nusselt for a flat plate, spacing of 1.5 cm. 
+initial_internal_temperature = 293.15                  # Initial material temperature. 
+external_temperature = 573.15                         # External temperature applied to the plates. 
+t_delta = 1e-4                                        # Time step in the heat diffusion model. 
+t_end = 1.0                                             # Simulation time (s).
 save_files = false                                    # Saving heat diffusion CSVs. 
 write_interval = 10000                                # Iterations. 
 
@@ -57,24 +60,24 @@ center = { x = 0.0, y = 0.0, z = 0.0 }
 length_count = 200
 depth_count = 200
 height_count = 200
-total_length = 1.5
-total_depth = 1.5
-total_height = 1.5
+total_length = 4.0
+total_depth = 4.0
+total_height = 2.0
 
 [geometry_plot_bins]
-center = { x = -0.05, y = 0.0, z = 0.0 }
-length_count = 200
-depth_count = 200
-height_count = 100
-total_length = 0.2
-total_depth = 0.2
-total_height = 2
+center = { x = 0.0, y = 0.0, z = 0.0 }
+length_count = 2001
+depth_count = 2001
+height_count = 11
+total_length = 3.0
+total_depth = 3.0
+total_height = 2.0
 
 [heat_diffusion_bins]
-center = { x = -0.05, y = 0.0, z = 0.0 }
-length_count = 50
-depth_count = 50
+center = { x = -0.125, y = 0.025, z = 0.0 }
+length_count = 100
+depth_count = 100
 height_count = 100
-total_length = 0.02
-total_depth = 0.02
-total_height = 1
+total_length = 0.15
+total_depth = 0.15
+total_height = 0.15

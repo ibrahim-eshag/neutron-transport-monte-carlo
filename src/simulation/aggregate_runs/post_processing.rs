@@ -39,6 +39,17 @@ fn combine_fission_vector_data(simulation_results: &Vec<Simulation>) -> Vec<Vec3
     aggregated_fission_vector
 }
 
+fn combine_neutron_distance_travelled_data(simulation_results: &Vec<Simulation>) -> Vec<f64> {
+    let mut neutron_combined_distance_travelled = Vec::<f64>::new();
+
+    for simulation in simulation_results {
+        neutron_combined_distance_travelled
+            .extend(&simulation.neutron_diagnostics.neutron_travel_distance);
+    }
+
+    neutron_combined_distance_travelled
+}
+
 pub fn post_process_aggregate_runs(
     config: &Config,
     simulation_results: Vec<Simulation>,
@@ -89,6 +100,9 @@ pub fn post_process_aggregate_runs(
         .bin_parameters
         .clone();
 
+    let combined_neutron_distance_travelled =
+        combine_neutron_distance_travelled_data(&simulation_results);
+
     let aggregate_run_result = AggregateRunResult {
         simulation_count,
         combined_bins,
@@ -98,6 +112,7 @@ pub fn post_process_aggregate_runs(
         total_neutrons_tracked,
         bin_parameters,
         convergence_per_generation,
+        combined_neutron_distance_travelled,
     };
 
     write_aggregate_report(&config, &aggregate_run_result, simulation_time);

@@ -35,8 +35,8 @@ impl Cuboid {
             z: half_height,
         };
 
-        let min = center.subtract(half_vector);
-        let max = center.add(half_vector);
+        let min = center.subtract(&half_vector);
+        let max = center.add(&half_vector);
 
         let bounding_box = BoundingBox { min, max };
         // debug!("Min: {}\nMax: {}", min, max);

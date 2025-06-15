@@ -11,7 +11,7 @@ use crate::utils::{
     config_loading::Config,
     data_writing::{
         write_bin_results_grid, write_bin_results_vector, write_convergence_vector,
-        write_fission_vector,
+        write_fission_vector, write_neutron_distance_travelled_vector,
     },
 };
 
@@ -35,6 +35,7 @@ pub fn write_aggregate_report(
     let fission_vector_path_string = format!("{}/neutron_fission_results.csv", &dir_path);
     let neutron_position_path_string = format!("{}/neutron_positions.csv", &dir_path);
     let convergence_per_generation_string = format!("{}/convergence.csv", &dir_path);
+    let mean_free_path_string = format!("{}/mean_free_path.csv", &dir_path);
 
     write_bin_results_vector(
         &aggregate_run_result.combined_bins,
@@ -54,7 +55,12 @@ pub fn write_aggregate_report(
         Path::new(&convergence_per_generation_string),
     );
 
-    let average_k = aggregate_run_result.averaged_k / aggregate_run_result.simulation_count as f64;
+    write_neutron_distance_travelled_vector(
+        &aggregate_run_result.combined_neutron_distance_travelled,
+        Path::new(&mean_free_path_string),
+    );
+
+    let average_k = aggregate_run_result.averaged_k;
     info!("Average k: {:.3}", average_k);
 
     let average_power =
@@ -81,6 +87,14 @@ pub fn write_aggregate_report(
 
     let total_fissions = aggregate_run_result.combined_fission_vector.len();
 
+    let mean_free_path: f64 = (aggregate_run_result
+        .combined_neutron_distance_travelled
+        .iter()
+        .sum::<f64>())
+        / aggregate_run_result
+            .combined_neutron_distance_travelled
+            .len() as f64;
+
     let report_line = format!(
         "=== Simulation completed ===\n
 - Settings - 
@@ -89,6 +103,7 @@ pub fn write_aggregate_report(
  - Results - 
 {: <30}{:>20} hh:mm:ss:ms\n\n\
     {: <30}{:>20.3}\n\
+    {: <30}{:>20}\n\
     {: <30}{:>20}\n\
     {: <30}{:>20}\n\
     {: <30}{:>20}\n\
@@ -102,6 +117,8 @@ pub fn write_aggregate_report(
         formatted_duration,
         "Averaged k:",
         aggregate_run_result.averaged_k,
+        "Mean free path:",
+        mean_free_path,
         "Initial neutron count:",
         config.simulation_parameters.initial_neutron_count,
         "Total neutrons:",

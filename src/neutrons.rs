@@ -11,6 +11,7 @@ pub struct Neutron {
     pub velocity: f64,
     pub time_step: f64,
     pub creation_time: f64,
+    pub creation_position: Vec3D,
     pub current_time: f64,
 
     pub distance_step: f64,

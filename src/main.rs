@@ -23,7 +23,7 @@ fn main() {
     } else if config.simulation_parameters.plot_geometry {
         info!("Plotting geometry.");
         let mut simulation = create_simulation();
-        simulation.components.update_cache_properties(1e6);
+        simulation.components.update_material_properties_cache(1e6);
         let geometry = GeometryDiagnostics::new(config.geometry_plot_bins);
         plot_geometry(&mut simulation, geometry);
     } else {

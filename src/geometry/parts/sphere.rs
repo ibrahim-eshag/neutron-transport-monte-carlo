@@ -38,8 +38,8 @@ impl Sphere {
             z: radius,
         };
 
-        let min = bottom_corner.add(center);
-        let max = top_corner.add(center);
+        let min = bottom_corner.add(&center);
+        let max = top_corner.add(&center);
 
         let bounding_box = BoundingBox { min, max };
         // debug!("Min: {}\nMax: {}", min, max);
@@ -82,7 +82,7 @@ impl Sphere {
             return false;
         }
 
-        let relative_radius_squared = neutron_position.subtract(self.center).norm_squared();
+        let relative_radius_squared = neutron_position.subtract(&self.center).norm_squared();
 
         // debug!(
         //     "Relative position norm: {}",

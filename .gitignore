@@ -4,17 +4,18 @@ __pycache__
 *.exe 
 .vscode/*
 .vscode 
+.vs/*
 
 # Results 
 *.txt 
 /results/
 
 # Enable these for public releases. 
-docs
-/figures/general 
+# docs
+# /figures/general 
 
 # Personal testing 
-src/geometry/presets/create_assembly.rs 
+# src/geometry/presets/create_assembly.rs 
 
 # Raw input data 
 *.endf 

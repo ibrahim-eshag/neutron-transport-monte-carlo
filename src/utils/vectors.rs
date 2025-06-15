@@ -42,7 +42,7 @@ impl Vec3D {
         self.z = self.z / norm;
     }
 
-    pub fn add(&self, second_vector: Vec3D) -> Vec3D {
+    pub fn add(&self, second_vector: &Vec3D) -> Vec3D {
         Vec3D {
             x: self.x + second_vector.x,
             y: self.y + second_vector.y,
@@ -50,7 +50,7 @@ impl Vec3D {
         }
     }
 
-    pub fn subtract(&self, second_vector: Vec3D) -> Vec3D {
+    pub fn subtract(&self, second_vector: &Vec3D) -> Vec3D {
         Vec3D {
             x: self.x - second_vector.x,
             y: self.y - second_vector.y,
@@ -66,11 +66,19 @@ impl Vec3D {
         }
     }
 
-    pub fn dot(&self, second_vector: Vec3D) -> f64 {
+    pub fn euclidean_distance_squared(&self, second_vector: &Vec3D) -> f64 {
+        let dx = self.x - second_vector.x;
+        let dy = self.y - second_vector.y;
+        let dz = self.z - second_vector.z;
+
+        dx * dx + dy * dy + dz * dz
+    }
+
+    pub fn dot(&self, second_vector: &Vec3D) -> f64 {
         self.x * second_vector.x + self.y * second_vector.y + self.z * second_vector.z
     }
 
-    pub fn scalar_dot(&self, scalar: f64) -> Vec3D {
+    pub fn scalar_product(&self, scalar: f64) -> Vec3D {
         Vec3D {
             x: self.x * scalar,
             y: self.y * scalar,
@@ -78,7 +86,7 @@ impl Vec3D {
         }
     }
 
-    pub fn min(&self, second_vector: Vec3D) -> Vec3D {
+    pub fn min(&self, second_vector: &Vec3D) -> Vec3D {
         Vec3D {
             x: self.x.min(second_vector.x),
             y: self.y.min(second_vector.y),
@@ -86,7 +94,7 @@ impl Vec3D {
         }
     }
 
-    pub fn max(&self, second_vector: Vec3D) -> Vec3D {
+    pub fn max(&self, second_vector: &Vec3D) -> Vec3D {
         Vec3D {
             x: self.x.max(second_vector.x),
             y: self.y.max(second_vector.y),
@@ -95,13 +103,18 @@ impl Vec3D {
     }
 
     pub fn random_unit_vector(rng: &mut rand::rngs::SmallRng) -> Vec3D {
-        let mut new_direction: Vec3D = Vec3D {
-            x: 1.0 - rng.gen::<f64>() * 2.0,
-            y: 1.0 - rng.gen::<f64>() * 2.0,
-            z: 1.0 - rng.gen::<f64>() * 2.0,
-        };
-        new_direction.to_unit_vec();
+        use std::f64::consts::TAU; // TAU = 2 π
 
-        new_direction
+        let u: f64 = rng.gen_range(-1.0..1.0);
+
+        let phi = rng.gen::<f64>() * TAU;
+
+        let r_xy = (1.0 - u * u).sqrt(); // sin(θ)
+
+        Vec3D {
+            x: r_xy * phi.cos(),
+            y: r_xy * phi.sin(),
+            z: u,
+        }
     }
 }

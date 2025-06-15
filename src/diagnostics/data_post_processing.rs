@@ -66,4 +66,6 @@ impl NeutronDiagnostics {
             self.calculate_power_production(halt_time);
         }
     }
+
+    
 }

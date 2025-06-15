@@ -34,11 +34,11 @@ impl Cylinder {
         let squared_radius = f64::powi(radius, 2);
         let half_length: f64 = length / 2.0;
 
-        let end1 = center.add(direction.scalar_dot(half_length));
-        let end2 = center.add(direction.scalar_dot(-half_length));
+        let end1 = center.add(&direction.scalar_product(half_length));
+        let end2 = center.add(&direction.scalar_product(-half_length));
 
-        let min = end1.min(end2).scalar_add(-radius);
-        let max = end1.max(end2).scalar_add(radius);
+        let min = end1.min(&end2).scalar_add(-radius);
+        let max = end1.max(&end2).scalar_add(radius);
 
         let bounding_box = BoundingBox { min, max };
 
@@ -91,8 +91,8 @@ impl Cylinder {
             return false;
         }
 
-        let relative_position = neutron_position.subtract(self.center);
-        let parallel_component = relative_position.dot(self.direction);
+        let relative_position = neutron_position.subtract(&self.center);
+        let parallel_component = relative_position.dot(&self.direction);
         let perpendicular_component_squared =
             relative_position.norm_squared() - parallel_component.powi(2);
 

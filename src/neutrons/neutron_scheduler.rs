@@ -1,5 +1,5 @@
 use crate::neutrons::Neutron;
-use log::debug;
+use log::info;
 use rand::seq::SliceRandom;
 /// Stores the neutrons and schedules their runs.
 /// This consists of two queues, which are swapped whenever a generation runs out.
@@ -30,6 +30,18 @@ impl NeutronScheduler {
         match !self.queue_selector {
             false => self.neutron_queue_a.push(neutron),
             true => self.neutron_queue_b.push(neutron),
+        };
+    }
+
+    pub fn add_neutron_vec(&mut self, neutrons: &mut Vec<Neutron>) {
+        // match !self.queue_selector {
+        //     false => debug!("Adding to queue A"),
+        //     true => debug!("Adding to queue B"),
+        // }
+
+        match !self.queue_selector {
+            false => self.neutron_queue_a.append(neutrons),
+            true => self.neutron_queue_b.append(neutrons),
         };
     }
 
@@ -94,9 +106,14 @@ impl NeutronScheduler {
 
             self.track_neutron_population_history();
 
-            debug!(
-                "Currently at generation {}",
-                self.neutron_generation_history.len()
+            info!(
+                "Currently at generation {} - queue length: {}",
+                self.neutron_generation_history.len(),
+                if self.neutron_queue_a.len() != 0 {
+                    self.neutron_queue_a.len()
+                } else {
+                    self.neutron_queue_b.len()
+                }
             );
 
             if self.variance_reduction {
