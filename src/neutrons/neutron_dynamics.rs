@@ -124,7 +124,7 @@ impl Neutron {
         let floating_point_difference = nu_bar - floored_nu_bar;
 
         if floating_point_difference > 0.0 {
-            if rng.gen::<f64>() <= floating_point_difference {
+            if rng.random::<f64>() <= floating_point_difference {
                 return floored_nu_bar as i32 + 1;
             } else {
                 return floored_nu_bar as i32;
@@ -146,7 +146,7 @@ impl Neutron {
             return InteractionTypes::Escaped;
         }
 
-        let interaction_criterion = rng.gen::<f64>();
+        let interaction_criterion = rng.random::<f64>();
         let interaction_probability =
             1.0 - f64::exp(-self.distance_step * composition_total_cross_section);
 
@@ -155,7 +155,7 @@ impl Neutron {
         // }
 
         if interaction_criterion <= interaction_probability {
-            let interaction_type_criterion = rng.gen::<f64>();
+            let interaction_type_criterion = rng.random::<f64>();
 
             // Order:
             // 0 < Fission <= Scattering <= Absorption < 1

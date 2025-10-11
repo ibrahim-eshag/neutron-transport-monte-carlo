@@ -293,7 +293,7 @@ impl Components {
         part_composition_vector: &Vec<PartComposition>,
         composition_total_cross_section: f64,
     ) -> usize {
-        let material_selection_criterion = rng.gen::<f64>();
+        let material_selection_criterion = rng.random::<f64>();
         let mut cumulative_probability = 0.0;
 
         debug_assert!(

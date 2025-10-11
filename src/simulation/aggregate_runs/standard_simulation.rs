@@ -17,7 +17,7 @@ use log::info;
 
 pub fn create_simulation() -> Simulation {
     // Creating the RNG object.
-    let rng = SmallRng::from_entropy();
+    let rng = SmallRng::from_rng(&mut rand::rng());
 
     // Loading config
     let config = load_config(Path::new("config/simulation/default.toml"));

@@ -1,5 +1,5 @@
 use log::warn;
-use rand::{distributions::Uniform, Rng};
+use rand::{distr::Uniform, Rng};
 use std::fs::OpenOptions;
 use std::io::Write;
 
@@ -19,12 +19,13 @@ pub fn rejection_sample_watt(a: f64, b: f64, rng: &mut rand::rngs::SmallRng) -> 
     let maximum_energy = 1.5e7;
     let max_iterations = 1e3 as i64;
 
-    let uniform: Uniform<f64> = Uniform::new(0.0, maximum_energy);
+    let uniform: Uniform<f64> =
+        Uniform::new(0.0, maximum_energy).expect("Failed to create uniform distribution");
 
     for (_iteration_counter, _) in (0..max_iterations).enumerate() {
         let random_energy = rng.sample(uniform);
         let watt_probability = watt_distribution(a, b, random_energy);
-        let rejection_criterion = rng.gen::<f64>();
+        let rejection_criterion = rng.random::<f64>();
 
         if rejection_criterion <= watt_probability {
             return Some(random_energy);

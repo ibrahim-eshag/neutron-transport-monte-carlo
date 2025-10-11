@@ -14,7 +14,7 @@ use std::path::Path;
 
 #[test]
 fn godiva_test() {
-    let rng = SmallRng::from_entropy();
+    let rng = SmallRng::from_rng(&mut rand::rng());
 
     // Loading config
     let config = load_config(Path::new("config/simulation/reference.toml"));
@@ -73,7 +73,7 @@ fn godiva_test() {
 
 #[test]
 fn infinite_medium_test() {
-    let rng = SmallRng::from_entropy();
+    let rng = SmallRng::from_rng(&mut rand::rng());
 
     // Loading config
     let config = load_config(Path::new("config/simulation/reference.toml"));

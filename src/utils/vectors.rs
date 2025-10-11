@@ -105,9 +105,9 @@ impl Vec3D {
     pub fn random_unit_vector(rng: &mut rand::rngs::SmallRng) -> Vec3D {
         use std::f64::consts::TAU; // TAU = 2 π
 
-        let u: f64 = rng.gen_range(-1.0..1.0);
+        let u: f64 = rng.random_range(-1.0..1.0);
 
-        let phi = rng.gen::<f64>() * TAU;
+        let phi = rng.random::<f64>() * TAU;
 
         let r_xy = (1.0 - u * u).sqrt(); // sin(θ)
 
